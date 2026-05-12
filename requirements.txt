@@ -1,0 +1,7 @@
+flask
+flask-cors
+requests
+huggingface_hub
+PyPDF2
+Pillow
+gunicorn
