@@ -1,310 +1,1257 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>DIVU AI | Pro Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #0a0a0a; 
-            color: #e5e7eb; 
-            overflow: auto; 
-            margin: 0;
-        }
-        
-        .chat-area { 
-            display: flex; 
-            flex-direction: column; 
-            background-color: #0a0a0a; 
-            position: relative; 
-            height: 100vh;
-            overscroll-behavior-y: auto; 
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        
-        .glass-input { 
-            background: rgba(20, 20, 20, 0.8); 
-            backdrop-filter: blur(20px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 24px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        }
+      :root {
+        --brand-primary: #10a37f;
+        --bg-dark: #0a0a0a;
+        --surface-glass: rgba(17, 24, 39, 0.7);
+        --border-white: rgba(255, 255, 255, 0.08);
+      }
 
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .msg-anim { animation: slideUp 0.3s ease-out forwards; }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-dark);
+        color: #e5e7eb;
+        margin: 0;
+        overflow: hidden;
+        height: 100vh;
+      }
 
-        .response-text b, .response-text strong { color: #10a37f; font-weight: 600; }
-        .response-text ul { list-style-type: disc; margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .response-text ol { list-style-type: decimal; margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .response-text li { margin-bottom: 0.25rem; }
-        .response-text p { margin-bottom: 0.75rem; }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 10px;
+      }
+
+      .glass-panel {
+        background: var(--surface-glass);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border-white);
+      }
+
+      .chat-container {
+        height: calc(100vh - 64px - 100px);
+      }
+
+      @keyframes fadeInScale {
+        from {
+          opacity: 0;
+          transform: scale(0.98) translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .message-anim {
+        animation: fadeInScale 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      .markdown-body h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 1.5rem 0 1rem;
+        color: #fff;
+      }
+      .markdown-body h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 1.3rem 0 0.8rem;
+        color: #fff;
+      }
+      .markdown-body h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 1.1rem 0 0.6rem;
+        color: #fff;
+      }
+      .markdown-body p {
+        margin-bottom: 1rem;
+        line-height: 1.7;
+        color: #d1d5db;
+      }
+      .markdown-body ul {
+        list-style-type: disc;
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      .markdown-body ol {
+        list-style-type: decimal;
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      .markdown-body li {
+        margin-bottom: 0.5rem;
+      }
+
+      .code-block {
+        background: #0d1117;
+        border-radius: 12px;
+        margin: 1.2rem 0;
+        border: 1px solid var(--border-white);
+        overflow: hidden;
+      }
+      .code-header {
+        background: #161b22;
+        padding: 8px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        color: #8b949e;
+        border-bottom: 1px solid var(--border-white);
+      }
+      .code-block pre {
+        padding: 16px;
+        overflow-x: auto;
+        font-family: "Fira Code", monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: #e6edf3;
+      }
+      .inline-code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: "Fira Code", monospace;
+        font-size: 0.85em;
+      }
+
+      .modal-overlay {
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+        z-index: 100;
+      }
     </style>
-</head>
-<body class="h-screen w-screen">
-
-    <main class="chat-area">
-        <header class="h-16 flex items-center justify-between px-6 border-b border-white/5 flex-shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-[#10a37f] rounded-lg flex items-center justify-center shadow-lg shadow-[#10a37f]/20">
-                    <i class="fas fa-robot text-white text-xs"></i>
-                </div>
-                <span class="font-bold text-lg tracking-tight">DIVU AI</span>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <button onclick="clearChat()" class="text-[10px] uppercase tracking-widest text-gray-500 hover:text-red-400 transition-colors font-bold mr-2">
-                    Clear History
-                </button>
-                <button onclick="toggleVoice()" class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/5 text-xs text-gray-400 transition-all border border-white/5">
-                    <i class="fas fa-volume-mute text-gray-600" id="voiceIcon"></i>
-                    <span id="voiceStatus">Voice: OFF</span>
-                </button>
-            </div>
-        </header>
-
-        <div id="chatBox" class="flex-1 overflow-y-auto custom-scrollbar">
-            <div class="max-w-3xl mx-auto px-6 py-10 space-y-10" id="messageList"></div>
+  </head>
+  <body class="flex flex-col">
+    <header
+      class="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-[#0a0a0a] z-50"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-9 h-9 bg-[#10a37f] rounded-xl flex items-center justify-center shadow-lg shadow-[#10a37f]/20"
+        >
+          <i class="fas fa-bolt text-white text-lg"></i>
         </div>
-
-        <div class="w-full px-4 pb-8 flex-shrink-0">
-            <div class="max-w-3xl mx-auto relative">
-                <div id="previewArea" class="flex gap-2 mb-3 overflow-x-auto pb-2 custom-scrollbar empty:hidden"></div>
-                
-                <div class="glass-input p-2 flex flex-col">
-                    <div class="flex items-end gap-2">
-                        <button onclick="document.getElementById('fileInput').click()" class="w-12 h-12 flex items-center justify-center text-gray-500 hover:text-white transition-all">
-                            <i class="fas fa-paperclip text-xl"></i>
-                        </button>
-                        <input type="file" id="fileInput" multiple accept="image/*" class="hidden">
-                        
-                        <textarea id="messageInput" rows="1" placeholder="Type your message..." class="flex-1 bg-transparent border-none focus:ring-0 text-white py-3 resize-none max-h-48 custom-scrollbar placeholder-gray-600"></textarea>
-                        
-                        <div class="flex items-center gap-2 pr-2 pb-1">
-                            <button id="sendBtn" onclick="handleSendMessage()" class="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 transition-all shadow-xl disabled:opacity-50">
-                                <i class="fas fa-arrow-up"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <p class="text-[10px] text-center text-gray-600 mt-3 font-medium uppercase tracking-widest">DIVU AI • Persistent Workspace</p>
-            </div>
+        <div>
+          <h1 class="font-bold text-lg leading-none tracking-tight">DIVU AI</h1>
+          <span
+            class="text-[10px] text-[#10a37f] font-bold uppercase tracking-widest"
+            >Enterprise v4.0</span
+          >
         </div>
-    </main>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button
+          onclick="showClearConfirm()"
+          class="hidden md:block text-[10px] uppercase tracking-widest text-gray-500 hover:text-red-400 transition-colors font-bold"
+        >
+          Wipe Session
+        </button>
+        <div class="h-6 w-[1px] bg-white/10 hidden md:block"></div>
+        <button
+          id="voiceToggleBtn"
+          onclick="toggleVoice()"
+          class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/5 text-xs font-medium transition-all border border-white/10"
+        >
+          <i class="fas fa-volume-mute text-gray-500" id="voiceIcon"></i>
+          <span id="voiceStatus">Voice Off</span>
+        </button>
+      </div>
+    </header>
+
+    <div
+      id="chatBox"
+      class="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0a0a]"
+    >
+      <div
+        class="max-w-4xl mx-auto px-4 md:px-8 py-10 space-y-8"
+        id="messageList"
+      >
+        <!-- Messages injected here -->
+      </div>
+      <div id="anchor"></div>
+    </div>
+
+    <footer
+      class="w-full bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent pt-10 pb-6 px-4"
+    >
+      <div class="max-w-4xl mx-auto relative">
+        <div
+          id="previewArea"
+          class="flex gap-3 mb-4 overflow-x-auto pb-2 custom-scrollbar empty:hidden"
+        ></div>
+
+        <div
+          class="glass-panel p-3 rounded-[28px] shadow-2xl transition-all focus-within:ring-2 focus-within:ring-[#10a37f]/50"
+        >
+          <div class="flex items-end gap-2">
+            <button
+              onclick="document.getElementById('fileInput').click()"
+              class="w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white transition-all rounded-full hover:bg-white/5"
+            >
+              <i class="fas fa-plus text-lg"></i>
+            </button>
+            <input
+              type="file"
+              id="fileInput"
+              multiple
+              accept="image/*,.pdf"
+              class="hidden"
+            />
+
+            <textarea
+              id="messageInput"
+              rows="1"
+              placeholder="Ask DIVU anything..."
+              class="flex-1 bg-transparent border-none focus:ring-0 text-white py-3 resize-none max-h-60 custom-scrollbar placeholder-gray-500 text-base md:text-lg"
+            ></textarea>
+
+            <button
+              id="sendBtn"
+              onclick="handleSendMessage()"
+              class="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-20 disabled:grayscale"
+            >
+              <i class="fas fa-arrow-up text-lg"></i>
+            </button>
+          </div>
+        </div>
+        <p
+          class="text-[9px] text-center text-gray-600 mt-4 font-medium uppercase tracking-[0.2em]"
+        >
+          Neural Architecture • Encrypted Session
+        </p>
+      </div>
+    </footer>
+
+    <div id="modalContainer"></div>
 
     <script>
-        const chatBox = document.getElementById('chatBox');
-        const messageList = document.getElementById('messageList');
-        const messageInput = document.getElementById('messageInput');
-        const fileInput = document.getElementById('fileInput');
-        const previewArea = document.getElementById('previewArea');
-        const voiceIcon = document.getElementById('voiceIcon');
-        const voiceStatus = document.getElementById('voiceStatus');
-        
-        let uploadedPaths = [];
-        // Changed default to false (OFF)
-        let isVoiceActive = localStorage.getItem('divu_voice_active') === 'true';
-        let chatHistory = JSON.parse(localStorage.getItem('divu_chat_history')) || [];
-        const synth = window.speechSynthesis;
+// =========================================
+// ELEMENTS
+// =========================================
 
-        window.onload = () => {
-            updateVoiceUI();
-            if (chatHistory.length === 0) {
-                appendMessage('bot', "The persistent engine is active. Voice is muted by default—tap the button to enable it.", [], null, false);
-            } else {
-                chatHistory.forEach(msg => {
-                    appendMessage(msg.role, msg.text, msg.files, msg.botImg, false);
-                });
-            }
-        };
+const chatBox = document.getElementById("chatBox");
 
-        function updateVoiceUI() {
-            voiceIcon.className = isVoiceActive ? 'fas fa-volume-up text-[#10a37f]' : 'fas fa-volume-mute text-gray-600';
-            voiceStatus.innerText = isVoiceActive ? 'Voice: ON' : 'Voice: OFF';
+const messageList = document.getElementById("messageList");
+
+const messageInput = document.getElementById("messageInput");
+
+const fileInput = document.getElementById("fileInput");
+
+const previewArea = document.getElementById("previewArea");
+
+const voiceIcon = document.getElementById("voiceIcon");
+
+const voiceStatus = document.getElementById("voiceStatus");
+
+const modalContainer = document.getElementById("modalContainer");
+
+// =========================================
+// VARIABLES
+// =========================================
+
+let uploadedFiles = [];
+
+let isVoiceActive =
+  localStorage.getItem("divu_voice_active") === "true";
+
+let chatHistory =
+  JSON.parse(
+    localStorage.getItem("divu_chat_history")
+  ) || [];
+
+const synth = window.speechSynthesis;
+
+// =========================================
+// LOAD
+// =========================================
+
+window.onload = () => {
+
+  updateVoiceUI();
+
+  if (chatHistory.length === 0) {
+
+    appendMessage(
+      "bot",
+
+      "## Welcome to DIVU Pro\nI'm your persistent neural assistant. You can upload documents, images, or simply chat.",
+
+      [],
+
+      null,
+
+      false
+    );
+
+  }
+  else {
+
+    chatHistory.forEach((msg) => {
+
+      appendMessage(
+        msg.role,
+        msg.text,
+        msg.files || [],
+        msg.botImg || null,
+        false
+      );
+
+    });
+
+  }
+
+  scrollToBottom();
+
+};
+
+// =========================================
+// VOICE
+// =========================================
+
+function updateVoiceUI() {
+
+  voiceIcon.className = isVoiceActive
+    ? "fas fa-volume-up text-[#10a37f]"
+    : "fas fa-volume-mute text-gray-500";
+
+  voiceStatus.innerText =
+    isVoiceActive
+      ? "Voice On"
+      : "Voice Off";
+
+  document
+    .getElementById("voiceToggleBtn")
+    .classList.toggle(
+      "border-[#10a37f]/30",
+      isVoiceActive
+    );
+
+}
+
+function toggleVoice() {
+
+  isVoiceActive = !isVoiceActive;
+
+  localStorage.setItem(
+    "divu_voice_active",
+    isVoiceActive
+  );
+
+  updateVoiceUI();
+
+  if (!isVoiceActive) {
+    synth.cancel();
+  }
+
+}
+
+function speak(text) {
+
+  if (!isVoiceActive || !text) return;
+
+  synth.cancel();
+
+  const cleanText =
+    text
+      .replace(/[*#_`]/g, "")
+      .substring(0, 300);
+
+  const utterance =
+    new SpeechSynthesisUtterance(cleanText);
+
+  const voices =
+    synth.getVoices();
+
+  const preferredVoice =
+    voices.find(
+      (v) =>
+        v.name.includes("Google") ||
+        v.name.includes("Natural")
+    ) || voices[0];
+
+  if (preferredVoice) {
+    utterance.voice = preferredVoice;
+  }
+
+  utterance.rate = 1.0;
+
+  utterance.pitch = 1.0;
+
+  synth.speak(utterance);
+
+}
+
+// =========================================
+// TEXTAREA AUTO HEIGHT
+// =========================================
+
+messageInput.addEventListener(
+  "input",
+
+  function () {
+
+    this.style.height = "auto";
+
+    this.style.height =
+      Math.min(
+        this.scrollHeight,
+        240
+      ) + "px";
+
+  }
+);
+
+// =========================================
+// ENTER SEND
+// =========================================
+
+messageInput.addEventListener(
+  "keydown",
+
+  (e) => {
+
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey &&
+      window.innerWidth > 768
+    ) {
+
+      e.preventDefault();
+
+      handleSendMessage();
+
+    }
+
+  }
+);
+
+// =========================================
+// FILE INPUT
+// =========================================
+
+fileInput.addEventListener(
+  "change",
+
+  function () {
+
+    Array.from(this.files).forEach((file) => {
+
+      const id =
+        Math.random()
+          .toString(36)
+          .substring(7);
+
+      uploadedFiles.push({
+        id,
+        file
+      });
+
+      addPreview(file, id);
+
+    });
+
+    this.value = "";
+
+  }
+);
+
+// =========================================
+// ADD PREVIEW
+// =========================================
+
+function addPreview(file, id) {
+
+  const div =
+    document.createElement("div");
+
+  div.className =
+    "relative flex-shrink-0 group w-20 h-20 rounded-2xl overflow-hidden border border-white/10 glass-panel p-1";
+
+  if (file.type.startsWith("image/")) {
+
+    const reader =
+      new FileReader();
+
+    reader.onload = (e) => {
+
+      div.innerHTML = `
+
+<img
+src="${e.target.result}"
+class="w-full h-full object-cover rounded-xl">
+
+<button
+onclick="removeFile('${id}')"
+class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+
+<i class="fas fa-times"></i>
+
+</button>
+
+      `;
+
+    };
+
+    reader.readAsDataURL(file);
+
+  }
+  else {
+
+    div.innerHTML = `
+
+<div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+
+<i class="fas fa-file-pdf text-2xl mb-1"></i>
+
+<span class="text-[8px] truncate w-full px-2 text-center">
+
+${file.name}
+
+</span>
+
+</div>
+
+<button
+onclick="removeFile('${id}')"
+class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+
+<i class="fas fa-times"></i>
+
+</button>
+
+    `;
+
+  }
+
+  div.id = `preview-${id}`;
+
+  previewArea.appendChild(div);
+
+}
+
+// =========================================
+// REMOVE FILE
+// =========================================
+
+function removeFile(id) {
+
+  uploadedFiles =
+    uploadedFiles.filter(
+      (f) => f.id !== id
+    );
+
+  document
+    .getElementById(`preview-${id}`)
+    ?.remove();
+
+}
+
+// =========================================
+// MARKDOWN FORMAT
+// =========================================
+
+function formatMarkdown(text) {
+
+  if (!text) return "";
+
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // =====================================
+  // CODE BLOCKS
+  // =====================================
+
+  html = html.replace(
+
+    /```(\w*)\n([\s\S]*?)```/g,
+
+    (match, lang, code) => {
+
+      return `
+
+<div class="code-block">
+
+<div class="code-header">
+
+<span>
+${lang.toUpperCase() || "CODE"}
+</span>
+
+<button
+onclick="copyCode(this)"
+class="hover:text-white transition-colors">
+
+<i class="far fa-copy mr-1"></i>
+
+Copy
+
+</button>
+
+</div>
+
+<pre><code>${code.trim()}</code></pre>
+
+</div>
+
+      `;
+
+    }
+  );
+
+  // =====================================
+  // INLINE CODE
+  // =====================================
+
+  html = html.replace(
+    /`([^`]+)`/g,
+    '<code class="inline-code">$1</code>'
+  );
+
+  // =====================================
+  // BOLD
+  // =====================================
+
+  html = html.replace(
+    /\*\*([^*]+)\*\*/g,
+    "<strong>$1</strong>"
+  );
+
+  // =====================================
+  // HEADERS
+  // =====================================
+
+  html = html.replace(
+    /^### (.*$)/gim,
+    "<h3>$1</h3>"
+  );
+
+  html = html.replace(
+    /^## (.*$)/gim,
+    "<h2>$1</h2>"
+  );
+
+  html = html.replace(
+    /^# (.*$)/gim,
+    "<h1>$1</h1>"
+  );
+
+  // =====================================
+  // LISTS
+  // =====================================
+
+  html = html.replace(
+    /^\s*[-*+]\s+(.*)/gm,
+    "<li>$1</li>"
+  );
+
+  html = html.replace(
+    /(<li>.*<\/li>)/s,
+    "<ul>$1</ul>"
+  );
+
+  return html
+    .replace(/\n/g, "<br>")
+    .replace(/<\/ul><br>/g, "</ul>");
+
+}
+
+// =========================================
+// COPY CODE
+// =========================================
+
+async function copyCode(btn) {
+
+  const code =
+    btn.parentElement
+      .nextElementSibling.innerText;
+
+  try {
+
+    await navigator.clipboard.writeText(code);
+
+    const original =
+      btn.innerHTML;
+
+    btn.innerHTML =
+      '<i class="fas fa-check text-green-400"></i> Copied';
+
+    setTimeout(() => {
+
+      btn.innerHTML = original;
+
+    }, 2000);
+
+  }
+  catch {
+
+    console.error("Copy failed");
+
+  }
+
+}
+
+// =========================================
+// SEND MESSAGE
+// =========================================
+
+async function handleSendMessage() {
+
+  const text =
+    messageInput.value.trim();
+
+  if (
+    !text &&
+    uploadedFiles.length === 0
+  ) return;
+
+  const currentFiles =
+    [...uploadedFiles];
+
+  appendMessage(
+    "user",
+    text,
+    currentFiles.map((f) => f.file),
+    null,
+    true
+  );
+
+  messageInput.value = "";
+
+  messageInput.style.height = "auto";
+
+  previewArea.innerHTML = "";
+
+  uploadedFiles = [];
+
+  const loadingId =
+    "loading-" + Date.now();
+
+  appendLoading(loadingId);
+
+  try {
+
+    let endpoint = "/chat";
+
+    // =====================================
+    // PDF ANALYZER
+    // =====================================
+
+    if (
+      currentFiles.some((f) =>
+        f.file.name.endsWith(".pdf")
+      )
+    ) {
+
+      endpoint = "/pdf-summary";
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "pdf",
+        currentFiles[0].file
+      );
+
+      const response =
+        await fetch(
+          endpoint,
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+
+      const data =
+        await response.json();
+
+      document
+        .getElementById(loadingId)
+        ?.remove();
+
+      appendMessage(
+        "bot",
+        data.reply,
+        [],
+        null,
+        true
+      );
+
+      speak(data.reply);
+
+      return;
+
+    }
+
+    // =====================================
+    // IMAGE EDIT
+    // =====================================
+
+    if (
+      currentFiles.some((f) =>
+        f.file.type.startsWith("image/")
+      )
+    ) {
+
+      endpoint = "/edit-image";
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "image",
+        currentFiles[0].file
+      );
+
+      formData.append(
+        "prompt",
+        text
+      );
+
+      const response =
+        await fetch(
+          endpoint,
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+
+      const data =
+        await response.json();
+
+      document
+        .getElementById(loadingId)
+        ?.remove();
+
+      appendMessage(
+        "bot",
+        data.reply,
+        [],
+        data.image,
+        true
+      );
+
+      speak(data.reply);
+
+      return;
+
+    }
+
+    // =====================================
+    // NORMAL CHAT
+    // =====================================
+
+    const response =
+      await fetch(
+        endpoint,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            message: text
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    document
+      .getElementById(loadingId)
+      ?.remove();
+
+    appendMessage(
+      "bot",
+      data.reply,
+      [],
+      data.image,
+      true
+    );
+
+    speak(data.reply);
+
+  }
+  catch (e) {
+
+    document
+      .getElementById(loadingId)
+      ?.remove();
+
+    appendMessage(
+      "bot",
+
+      "I encountered a synchronization error. Please check your connection and try again.",
+
+      [],
+
+      null,
+
+      false
+    );
+
+  }
+
+}
+
+// =========================================
+// LOADING
+// =========================================
+
+function appendLoading(id) {
+
+  const wrap =
+    document.createElement("div");
+
+  wrap.id = id;
+
+  wrap.className =
+    "flex gap-4 message-anim";
+
+  wrap.innerHTML = `
+
+<div class="w-9 h-9 rounded-xl bg-[#10a37f]/10 flex items-center justify-center border border-[#10a37f]/20 flex-shrink-0">
+
+<i class="fas fa-robot text-[#10a37f] text-xs"></i>
+
+</div>
+
+<div class="flex items-center gap-1.5 py-3">
+
+<div class="w-1.5 h-1.5 bg-[#10a37f] rounded-full animate-bounce"></div>
+
+<div class="w-1.5 h-1.5 bg-[#10a37f] rounded-full animate-bounce [animation-delay:0.2s]"></div>
+
+<div class="w-1.5 h-1.5 bg-[#10a37f] rounded-full animate-bounce [animation-delay:0.4s]"></div>
+
+</div>
+
+  `;
+
+  messageList.appendChild(wrap);
+
+  scrollToBottom();
+
+}
+
+// =========================================
+// APPEND MESSAGE
+// =========================================
+
+function appendMessage(
+  role,
+  text,
+  files = [],
+  botImg = null,
+  shouldSave = true
+) {
+
+  const wrap =
+    document.createElement("div");
+
+  wrap.className =
+    `flex gap-4 md:gap-6 message-anim ${role === "user" ? "justify-end" : ""}`;
+
+  if (shouldSave) {
+
+    chatHistory.push({
+      role,
+      text,
+      botImg
+    });
+
+    localStorage.setItem(
+      "divu_chat_history",
+
+      JSON.stringify(
+        chatHistory.slice(-50)
+      )
+    );
+
+  }
+
+  let contentHtml = "";
+
+  // =====================================
+  // USER
+  // =====================================
+
+  if (role === "user") {
+
+    let filesHtml = "";
+
+    if (files && files.length > 0) {
+
+      filesHtml =
+        '<div class="flex flex-wrap gap-2 mb-2 justify-end">';
+
+      files.forEach((file) => {
+
+        if (
+          file.type.startsWith("image/")
+        ) {
+
+          const url =
+            URL.createObjectURL(file);
+
+          filesHtml += `
+
+<div class="w-24 h-24 rounded-lg overflow-hidden border border-white/10 shadow-lg">
+
+<img
+src="${url}"
+class="w-full h-full object-cover">
+
+</div>
+
+          `;
+
+        }
+        else {
+
+          filesHtml += `
+
+<div class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-xl text-[10px] text-gray-300">
+
+<i class="fas fa-file-pdf text-red-400"></i>
+
+<span class="max-w-[100px] truncate">
+
+${file.name}
+
+</span>
+
+</div>
+
+          `;
+
         }
 
-        function toggleVoice() {
-            isVoiceActive = !isVoiceActive;
-            localStorage.setItem('divu_voice_active', isVoiceActive);
-            updateVoiceUI();
-            if (!isVoiceActive) synth.cancel();
-            // Optional: Provide feedback when turning ON
-            if (isVoiceActive) {
-                const utterance = new SpeechSynthesisUtterance("Voice mode activated.");
-                synth.speak(utterance);
-            }
-        }
+      });
 
-        function clearChat() {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-6';
-            modal.innerHTML = `
-                <div class="bg-[#111] border border-white/10 p-6 rounded-2xl max-w-sm w-full shadow-2xl">
-                    <h3 class="text-lg font-bold mb-2">Clear History?</h3>
-                    <p class="text-sm text-gray-400 mb-6">This will delete your persistent session locally.</p>
-                    <div class="flex gap-3">
-                        <button id="cancelClear" class="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition-all">Cancel</button>
-                        <button id="confirmClear" class="flex-1 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-sm font-medium transition-all">Clear All</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            document.getElementById('cancelClear').onclick = () => modal.remove();
-            document.getElementById('confirmClear').onclick = () => {
-                chatHistory = [];
-                localStorage.removeItem('divu_chat_history');
-                messageList.innerHTML = '';
-                appendMessage('bot', "History cleared. How can I assist you now?", [], null, true);
-                modal.remove();
-            };
-        }
+      filesHtml += "</div>";
 
-        function speak(text) {
-            if (!isVoiceActive || !text) return;
-            synth.cancel();
-            const cleanText = text.replace(/[*#_`]/g, '');
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            const voices = synth.getVoices();
-            const femaleVoice = voices.find(v => (v.name.includes('Female') || v.name.includes('UK English Female')) && v.lang.startsWith('en'));
-            if (femaleVoice) utterance.voice = femaleVoice;
-            utterance.rate = 1.0;
-            utterance.pitch = 1.1; 
-            synth.speak(utterance);
-        }
+    }
 
-        function formatResponse(text) {
-            if (!text) return "";
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            if (text.includes('\n- ') || text.includes('\n* ')) {
-                const lines = text.split('\n');
-                let inList = false;
-                text = lines.map(line => {
-                    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-                        const content = line.trim().substring(2);
-                        const prefix = !inList ? '<ul class="list-disc ml-6 my-2">' : '';
-                        inList = true;
-                        return `${prefix}<li>${content}</li>`;
-                    } else if (inList) {
-                        inList = false;
-                        return '</ul>' + line;
-                    }
-                    return line;
-                }).join('<br>');
-                if (inList) text += '</ul>';
-            }
-            return text.replace(/\n/g, '<br>');
-        }
+    contentHtml = `
 
-        messageInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
+<div class="max-w-[85%] flex flex-col items-end">
 
-        messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-            }
-        });
+${filesHtml}
 
-        fileInput.addEventListener('change', async function() {
-            const files = Array.from(this.files);
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append('image', file);
-                try {
-                    const response = await fetch('/upload', { method: 'POST', body: formData });
-                    const res = await response.json();
-                    if (res.success) {
-                        uploadedPaths.push(res.path);
-                        addPreview(file, res.path);
-                    }
-                } catch(e) { console.error("Upload Error", e); }
-            }
-        });
+<div class="bg-[#222] border border-white/5 text-white px-5 py-3.5 rounded-3xl rounded-tr-none shadow-xl">
 
-        function addPreview(file, path) {
-            const div = document.createElement('div');
-            div.className = 'relative w-16 h-16 rounded-xl border border-white/10 overflow-hidden flex-shrink-0 group';
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                div.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">
-                                <div onclick="this.parentElement.remove()" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                                    <i class="fas fa-times text-white"></i>
-                                </div>`;
-            }
-            reader.readAsDataURL(file);
-            previewArea.appendChild(div);
-        }
+<p class="text-sm md:text-base whitespace-pre-wrap">
 
-        async function handleSendMessage() {
-            const text = messageInput.value.trim();
-            if (!text && uploadedPaths.length === 0) return;
-            
-            appendMessage('user', text, [...uploadedPaths], null, true);
-            
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
-            previewArea.innerHTML = '';
-            uploadedPaths = [];
+${text}
 
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
-                });
-                const data = await response.json();
-                appendMessage('bot', data.reply, [], data.image, true);
-                speak(data.reply);
-            } catch (e) {
-                appendMessage('bot', "Server communication error.", [], null, false);
-            }
-        }
+</p>
 
-        function appendMessage(role, text, files = [], botImg = null, shouldSave = true) {
-            if (shouldSave) {
-                chatHistory.push({ role, text, files, botImg });
-                localStorage.setItem('divu_chat_history', JSON.stringify(chatHistory));
-            }
+</div>
 
-            const wrap = document.createElement('div');
-            wrap.className = 'msg-anim';
-            let filesHtml = files.length > 0 ? `<div class="flex gap-2 flex-wrap mb-2">${files.map(p => `<img src="${p}" class="w-24 h-24 rounded-lg object-cover border border-white/10">`).join('')}</div>` : '';
-            let botImgHtml = botImg ? `<div class="mt-4 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-[#111]"><img src="${botImg}" class="w-full max-h-[500px] object-contain"></div>` : '';
+</div>
 
-            if (role === 'user') {
-                wrap.innerHTML = `
-                    <div class="flex justify-end">
-                        <div class="bg-[#222] text-white px-5 py-3 rounded-2xl rounded-tr-none shadow-lg max-w-[85%]">
-                            ${filesHtml}
-                            <p class="leading-relaxed text-sm md:text-base">${text}</p>
-                        </div>
-                    </div>`;
-            } else {
-                wrap.innerHTML = `
-                    <div class="flex gap-4 md:gap-6">
-                        <div class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-[#10a37f]/10 flex items-center justify-center border border-[#10a37f]/20 flex-shrink-0">
-                            <i class="fas fa-robot text-[#10a37f] text-xs"></i>
-                        </div>
-                        <div class="flex-1 response-text">
-                            <div class="text-gray-300 leading-relaxed text-sm md:text-base">${formatResponse(text)}</div>
-                            ${botImgHtml}
-                        </div>
-                    </div>`;
-            }
-            messageList.appendChild(wrap);
-            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-        }
-        
-        window.speechSynthesis.onvoiceschanged = () => synth.getVoices();
-    </script>
-</body>
+    `;
+
+  }
+
+  // =====================================
+  // BOT
+  // =====================================
+
+  else {
+
+    contentHtml = `
+
+<div class="w-9 h-9 rounded-xl bg-[#10a37f]/10 flex items-center justify-center border border-[#10a37f]/20 flex-shrink-0">
+
+<i class="fas fa-robot text-[#10a37f] text-xs"></i>
+
+</div>
+
+<div class="flex-1 overflow-hidden">
+
+<div class="markdown-body">
+
+${formatMarkdown(text)}
+
+</div>
+
+${botImg
+  ? `
+<div class="mt-4 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+
+<img
+src="${botImg}"
+class="w-full h-auto max-h-[500px] object-cover">
+
+</div>
+`
+  : ""
+}
+
+</div>
+
+    `;
+
+  }
+
+  wrap.innerHTML =
+    contentHtml;
+
+  messageList.appendChild(wrap);
+
+  scrollToBottom();
+
+}
+
+// =========================================
+// SCROLL
+// =========================================
+
+function scrollToBottom() {
+
+  chatBox.scrollTo({
+    top: chatBox.scrollHeight,
+    behavior: "smooth"
+  });
+
+}
+
+// =========================================
+// CLEAR MODAL
+// =========================================
+
+function showClearConfirm() {
+
+  const modal =
+    document.createElement("div");
+
+  modal.className =
+    "fixed inset-0 modal-overlay flex items-center justify-center p-4";
+
+  modal.innerHTML = `
+
+<div class="glass-panel p-8 rounded-3xl max-w-sm w-full text-center message-anim">
+
+<div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+
+<i class="fas fa-trash-alt text-2xl"></i>
+
+</div>
+
+<h3 class="text-xl font-bold mb-2">
+
+Clear History?
+
+</h3>
+
+<p class="text-gray-400 text-sm mb-8 leading-relaxed">
+
+This action will permanently delete your session history.
+
+</p>
+
+<div class="flex gap-3">
+
+<button
+onclick="this.closest('.modal-overlay').remove()"
+class="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors text-sm font-semibold">
+
+Cancel
+
+</button>
+
+<button
+onclick="confirmClear(this)"
+class="flex-1 py-3 rounded-2xl bg-red-600 hover:bg-red-700 transition-colors text-sm font-semibold text-white">
+
+Clear All
+
+</button>
+
+</div>
+
+</div>
+
+  `;
+
+  modalContainer.appendChild(modal);
+
+}
+
+// =========================================
+// CLEAR CHAT
+// =========================================
+
+function confirmClear(btn) {
+
+  chatHistory = [];
+
+  localStorage.removeItem(
+    "divu_chat_history"
+  );
+
+  messageList.innerHTML = "";
+
+  btn
+    .closest(".modal-overlay")
+    .remove();
+
+  appendMessage(
+    "bot",
+
+    "## Session Reset\nHistorical data cleared successfully.",
+
+    [],
+
+    null,
+
+    false
+  );
+
+}
+
+// =========================================
+// VOICE INIT
+// =========================================
+
+window.speechSynthesis.onvoiceschanged =
+  () => synth.getVoices();
+  </script>
+  </body>
 </html>
