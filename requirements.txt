@@ -4,4 +4,7 @@ requests
 huggingface_hub
 PyPDF2
 Pillow
+python-docx
+python-pptx
+replicate
 gunicorn

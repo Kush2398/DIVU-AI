@@ -1,45 +1,42 @@
-# =========================================
-# app.py
-# =========================================
+# =========================================================
+# DIVU AI — FINAL PERFECT VERSION
+# START TO END FULL CODE
+# =========================================================
 
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+
 from huggingface_hub import InferenceClient
-from PIL import Image
-from datetime import datetime
+from werkzeug.utils import secure_filename
+
+from PyPDF2 import PdfReader
+from docx import Document
+from pptx import Presentation
+
+import replicate
 import requests
 import urllib.parse
 import random
 import os
-import re
+import time
 
-# =========================================
+# =========================================================
 # FLASK
-# =========================================
+# =========================================================
 
 app = Flask(__name__)
 
-# =========================================
-# ENV VARIABLES
-# =========================================
+CORS(app)
+
+# =========================================================
+# TOKENS
+# =========================================================
 
 HF_TOKEN = os.getenv("HF_TOKEN")
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-
-CITY = "Ahmedabad"
-
-# =========================================
-# CREATE FOLDERS
-# =========================================
-
-os.makedirs("static/op", exist_ok=True)
-
-os.makedirs("static/uploads", exist_ok=True)
-
-os.makedirs("static/combined", exist_ok=True)
-
-# =========================================
-# AI MODEL
-# =========================================
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+# =========================================================
+# HUGGINGFACE CHAT MODEL
+# =========================================================
 
 client = InferenceClient(
 
@@ -48,404 +45,784 @@ client = InferenceClient(
     token=HF_TOKEN
 )
 
-# =========================================
+# =========================================================
+# FOLDERS
+# =========================================================
+
+UPLOAD_FOLDER = "uploads"
+
+OUTPUT_FOLDER = "static/op"
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# =========================================================
+# CHAT MEMORY
+# =========================================================
+
+chat_history = []
+
+MAX_HISTORY = 20
+
+# =========================================================
+# SYSTEM PROMPT
+# =========================================================
+
+SYSTEM_PROMPT = """
+You are DIVU AI.
+
+An ultra futuristic premium AI assistant created by Kush.
+
+You are:
+- intelligent
+- futuristic
+- cinematic
+- premium
+- professional
+- creative
+- highly helpful
+
+You specialize in:
+- AI
+- coding
+- web development
+- app development
+- Python
+- Android
+- startups
+- futuristic ideas
+- education
+- productivity
+
+Rules:
+- clean formatting
+- modern responses
+- beautiful explanations
+- complete code only
+- beginner friendly
+- futuristic tone
+- no robotic responses
+"""
+
+# =========================================================
 # HOME
-# =========================================
+# =========================================================
 
 @app.route("/")
 def home():
 
     return render_template("index.html")
 
-# =========================================
-# IMAGE UPLOAD
-# =========================================
+# =========================================================
+# CLEAN RESPONSE
+# =========================================================
 
-@app.route("/upload", methods=["POST"])
-def upload_image():
+def clean_reply(reply):
+
+    if not reply:
+
+        return ""
+
+    remove_items = [
+
+        "```python",
+        "```html",
+        "```css",
+        "```javascript",
+        "```cpp",
+        "```java",
+        "```json",
+        "```"
+    ]
+
+    for item in remove_items:
+
+        reply = reply.replace(item, "")
+
+    return reply.strip()
+
+# =========================================================
+# CLEAN IMAGE PROMPT
+# =========================================================
+
+def clean_image_prompt(prompt):
+
+    prompt = prompt.lower()
+
+    remove_words = [
+
+        "generate image of",
+        "generate image",
+        "create image of",
+        "create image",
+        "make image of",
+        "make image",
+        "draw",
+        "photo of",
+        "picture of"
+    ]
+
+    for word in remove_words:
+
+        prompt = prompt.replace(word, "")
+
+    return prompt.strip()
+
+# =========================================================
+# DETECT STYLE
+# =========================================================
+
+def detect_style(prompt):
+
+    prompt = prompt.lower()
+
+    if "anime" in prompt:
+
+        return """
+        anime masterpiece,
+        studio ghibli style,
+        anime cinematic scene,
+        vibrant anime colors,
+        detailed anime art,
+        """
+
+    elif "cyberpunk" in prompt:
+
+        return """
+        cyberpunk,
+        futuristic neon city,
+        blade runner style,
+        neon lights,
+        sci-fi atmosphere,
+        """
+
+    elif "realistic" in prompt:
+
+        return """
+        ultra realistic,
+        DSLR photography,
+        photorealistic,
+        cinematic lighting,
+        realistic skin texture,
+        """
+
+    elif "fantasy" in prompt:
+
+        return """
+        fantasy masterpiece,
+        magical environment,
+        epic fantasy art,
+        """
+
+    elif "3d" in prompt:
+
+        return """
+        3D render,
+        octane render,
+        unreal engine,
+        cinematic render,
+        hyper detailed,
+        """
+
+    return """
+    ultra realistic,
+    cinematic lighting,
+    masterpiece,
+    8k,
+    highly detailed,
+    photorealistic,
+    """
+
+# =========================================================
+# ENHANCE PROMPT
+# =========================================================
+
+def enhance_prompt(user_prompt):
+
+    cleaned_prompt = clean_image_prompt(
+        user_prompt
+    )
+
+    style = detect_style(cleaned_prompt)
+
+    final_prompt = f"""
+    {style}
+
+    MASTERPIECE,
+    BEST QUALITY,
+    ULTRA DETAILED,
+    8K,
+    ULTRA REALISTIC,
+    CINEMATIC LIGHTING,
+    DRAMATIC SHADOWS,
+    DEPTH OF FIELD,
+    HDR,
+    PROFESSIONAL PHOTOGRAPHY,
+    SHARP FOCUS,
+    MOVIE QUALITY,
+    REALISTIC TEXTURES,
+    HIGH DETAIL ENVIRONMENT,
+    VISUALLY STUNNING,
+
+    NEGATIVE:
+    blurry,
+    low quality,
+    deformed face,
+    watermark,
+    text,
+    ugly,
+
+    SUBJECT:
+    {cleaned_prompt}
+    """
+
+    return final_prompt
+
+# =========================================================
+# AI IMAGE GENERATION
+# =========================================================
+
+def generate_ai_image(prompt):
 
     try:
 
-        if "image" not in request.files:
-
-            return jsonify({
-
-                "success":False,
-
-                "reply":"No image uploaded"
-            })
-
-        file = request.files["image"]
-
-        if file.filename == "":
-
-            return jsonify({
-
-                "success":False,
-
-                "reply":"Empty filename"
-            })
-
-        filename = (
-            f"{random.randint(1,999999)}_"
-            f"{file.filename}"
+        seed = random.randint(
+            1000,
+            999999
         )
 
-        save_path = os.path.join(
+        enhanced_prompt = enhance_prompt(
+            prompt
+        )
 
-            "static/uploads",
+        encoded_prompt = urllib.parse.quote(
+            enhanced_prompt
+        )
 
+        image_url = (
+
+            "https://image.pollinations.ai/prompt/"
+            + encoded_prompt
+            + f"?width=1024"
+            + f"&height=1024"
+            + f"&seed={seed}"
+            + "&model=flux"
+            + "&enhance=true"
+            + "&nologo=true"
+        )
+
+        response = requests.get(
+
+            image_url,
+
+            timeout=120,
+
+            headers={
+                "User-Agent": "DIVU-AI"
+            }
+        )
+
+        if response.status_code != 200:
+
+            return None
+
+        filename = (
+            f"divu_{int(time.time())}_{seed}.jpg"
+        )
+
+        output_path = os.path.join(
+            OUTPUT_FOLDER,
             filename
         )
 
-        file.save(save_path)
+        with open(output_path, "wb") as f:
 
-        return jsonify({
+            f.write(response.content)
 
-            "success":True,
+        if os.path.getsize(output_path) < 5000:
 
-            "path":
-            f"/static/uploads/{filename}"
-        })
+            os.remove(output_path)
+
+            return None
+
+        return (
+            f"http://127.0.0.1:5000/static/op/{filename}"
+        )
 
     except Exception as e:
 
-        print("UPLOAD ERROR:", e)
+        print("IMAGE ERROR:", e)
 
-        return jsonify({
+        return None
 
-            "success":False,
+# =========================================================
+# IMAGE REQUEST DETECTOR
+# =========================================================
 
-            "reply":"Upload failed"
-        })
+def is_image_request(message):
 
-# =========================================
-# COMBINE IMAGES
-# =========================================
+    message = message.lower().strip()
 
-@app.route("/combine", methods=["POST"])
-def combine_images():
+    keywords = [
 
-    try:
+        "generate image",
+        "create image",
+        "make image",
+        "draw",
+        "anime",
+        "wallpaper",
+        "poster",
+        "portrait",
+        "realistic",
+        "cinematic",
+        "illustration",
+        "3d render",
+        "concept art",
+        "photo of",
+        "picture of",
+        "show me",
+        "make art",
+        "design",
+        "logo",
+        "character",
+        "scene",
+        "fantasy",
+        "cyberpunk"
+    ]
 
-        data = request.get_json()
+    return any(
+        word in message
+        for word in keywords
+    )
 
-        images = data.get("images", [])
-
-        if len(images) < 2:
-
-            return jsonify({
-
-                "success":False,
-
-                "reply":"Upload at least 2 images"
-            })
-
-        pil_images = []
-
-        for img_path in images:
-
-            clean_path = img_path.replace("/", os.sep)
-
-            clean_path = clean_path.lstrip(os.sep)
-
-            image = Image.open(clean_path)
-
-            image = image.convert("RGB")
-
-            pil_images.append(image)
-
-        width = 512
-
-        height = 512
-
-        resized_images = []
-
-        for img in pil_images:
-
-            resized_images.append(
-
-                img.resize((width, height))
-            )
-
-        combined = Image.new(
-
-            "RGB",
-
-            (width * len(resized_images), height)
-        )
-
-        x = 0
-
-        for img in resized_images:
-
-            combined.paste(img, (x, 0))
-
-            x += width
-
-        filename = (
-            f"combined_"
-            f"{random.randint(1,999999)}.jpg"
-        )
-
-        save_path = os.path.join(
-
-            "static/combined",
-
-            filename
-        )
-
-        combined.save(save_path)
-
-        return jsonify({
-
-            "success":True,
-
-            "image":
-            f"/static/combined/{filename}"
-        })
-
-    except Exception as e:
-
-        print("COMBINE ERROR:", e)
-
-        return jsonify({
-
-            "success":False,
-
-            "reply":"Failed to combine images"
-        })
-
-# =========================================
-# CHAT API
-# =========================================
+# =========================================================
+# CHAT ROUTE
+# =========================================================
 
 @app.route("/chat", methods=["POST"])
 def chat():
 
     try:
 
+        global chat_history
+
         data = request.get_json()
 
-        message = data.get("message", "").strip()
-
-        lower_message = message.lower()
-
-        # =====================================
-        # TIME
-        # =====================================
-
-        if "time" in lower_message:
-
-            current_time = datetime.now().strftime("%I:%M %p")
+        if not data:
 
             return jsonify({
-
-                "reply":
-                f"The current time is {current_time}"
+                "reply": "No data received."
             })
 
-        # =====================================
-        # DATE
-        # =====================================
+        message = data.get(
+            "message",
+            ""
+        ).strip()
 
-        if "date" in lower_message:
-
-            current_date = datetime.now().strftime("%d %B %Y")
+        if not message:
 
             return jsonify({
-
-                "reply":
-                f"Today's date is {current_date}"
+                "reply": "Please enter message."
             })
 
-        # =====================================
-        # WEATHER
-        # =====================================
-
-        if "weather" in lower_message:
-
-            try:
-
-                if not WEATHER_API_KEY:
-
-                    return jsonify({
-
-                        "reply":
-                        "Weather API key missing"
-                    })
-
-                url = (
-
-                    f"https://api.openweathermap.org/data/2.5/weather?"
-                    f"q={CITY}&appid={WEATHER_API_KEY}&units=metric"
-                )
-
-                response = requests.get(url)
-
-                weather_data = response.json()
-
-                temp = weather_data["main"]["temp"]
-
-                desc = weather_data["weather"][0]["description"]
-
-                return jsonify({
-
-                    "reply":
-
-                    f"The temperature in {CITY} "
-                    f"is {temp}°C with {desc}"
-                })
-
-            except Exception as e:
-
-                print("WEATHER ERROR:", e)
-
-                return jsonify({
-
-                    "reply":
-                    "Unable to fetch weather"
-                })
-
-        # =====================================
         # IMAGE GENERATION
-        # =====================================
 
-        image_keywords = [
+        if is_image_request(message):
 
-            "generate image",
-            "create image",
-            "make image",
-            "draw"
+            image_path = generate_ai_image(
+                message
+            )
+
+            if image_path:
+
+                return jsonify({
+
+                    "reply":
+                    "✨ DIVU AI generated your cinematic image.",
+
+                    "image":
+                    image_path
+                })
+
+            else:
+
+                return jsonify({
+
+                    "reply":
+                    "❌ Failed to generate image."
+                })
+
+        # NORMAL CHAT
+
+        chat_history.append({
+
+            "role": "user",
+
+            "content": message
+        })
+
+        if len(chat_history) > MAX_HISTORY:
+
+            chat_history = (
+                chat_history[-MAX_HISTORY:]
+            )
+
+        messages = [
+
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            }
         ]
 
-        if any(word in lower_message for word in image_keywords):
+        messages.extend(chat_history)
 
-            prompt = lower_message
+        response = client.chat_completion(
 
-            for word in image_keywords:
+            messages=messages,
 
-                prompt = prompt.replace(word, "")
+            max_tokens=2500,
 
-            prompt = prompt.strip()
+            temperature=0.7
+        )
 
-            if prompt == "":
+        reply = (
+            response
+            .choices[0]
+            .message
+            .content
+        )
 
-                prompt = "futuristic ai robot"
+        reply = clean_reply(reply)
 
-            enhanced_prompt = (
+        chat_history.append({
 
-                "ultra realistic, cinematic lighting, "
-                "8k, masterpiece, highly detailed, "
-                f"{prompt}"
-            )
+            "role": "assistant",
 
-            encoded_prompt = urllib.parse.quote(
+            "content": reply
+        })
 
-                enhanced_prompt
-            )
+        return jsonify({
 
-            seed = random.randint(1,999999)
+            "reply":
+            reply + "\n\n✨ Powered by DIVU AI"
+        })
 
-            image_url = (
+    except Exception as e:
 
-                f"https://image.pollinations.ai/p/"
-                f"{encoded_prompt}"
-                f"?width=1024"
-                f"&height=1024"
-                f"&seed={seed}"
-                f"&model=flux"
-            )
+        return jsonify({
 
-            response = requests.get(image_url)
+            "reply":
+            f"❌ Server Error: {str(e)}"
+        })
 
-            filename = f"image_{seed}.jpg"
+# =========================================================
+# PDF SUMMARY
+# =========================================================
 
-            save_path = os.path.join(
+@app.route("/pdf-summary", methods=["POST"])
+def pdf_summary():
 
-                "static/op",
+    try:
 
-                filename
-            )
-
-            with open(save_path, "wb") as file:
-
-                file.write(response.content)
+        if "pdf" not in request.files:
 
             return jsonify({
-
-                "reply":
-                f"Generated image for: {prompt} 👇",
-
-                "image":
-                f"/static/op/{filename}"
+                "reply": "No file uploaded"
             })
 
-        # =====================================
-        # AI CHAT
-        # =====================================
+        file = request.files["pdf"]
+
+        filename = secure_filename(
+            file.filename
+        )
+
+        file_path = os.path.join(
+            UPLOAD_FOLDER,
+            filename
+        )
+
+        file.save(file_path)
+
+        extracted_text = ""
+
+        extension = (
+            filename.split(".")[-1]
+            .lower()
+        )
+
+        if extension == "pdf":
+
+            reader = PdfReader(file_path)
+
+            for page in reader.pages:
+
+                try:
+
+                    extracted_text += (
+                        page.extract_text()
+                        + "\n"
+                    )
+
+                except:
+
+                    pass
+
+        elif extension == "docx":
+
+            doc = Document(file_path)
+
+            for para in doc.paragraphs:
+
+                extracted_text += (
+                    para.text + "\n"
+                )
+
+        elif extension == "pptx":
+
+            prs = Presentation(file_path)
+
+            for slide in prs.slides:
+
+                for shape in slide.shapes:
+
+                    if hasattr(shape, "text"):
+
+                        extracted_text += (
+                            shape.text + "\n"
+                        )
+
+        elif extension == "txt":
+
+            with open(
+
+                file_path,
+
+                "r",
+
+                encoding="utf-8",
+
+                errors="ignore"
+
+            ) as f:
+
+                extracted_text = f.read()
+
+        else:
+
+            return jsonify({
+                "reply":
+                "Unsupported file format"
+            })
+
+        extracted_text = (
+            extracted_text[:7000]
+        )
 
         response = client.chat_completion(
 
             messages=[
 
                 {
-                    "role":"system",
+                    "role": "system",
 
                     "content":
-                    (
-                        "You are DIVU, "
-                        "a futuristic advanced AI assistant "
-                        "created by Kush. "
-                        "Reply naturally, intelligently, "
-                        "professionally, and warmly. "
-                        "Keep answers clean and detailed."
-                    )
+"""
+You are DIVU AI File Analyzer.
+
+Analyze professionally.
+
+Provide:
+- Summary
+- Important Points
+- Key Concepts
+- Beginner Friendly Explanation
+- Technical Insights
+"""
                 },
 
                 {
-                    "role":"user",
+                    "role": "user",
 
-                    "content":message
+                    "content":
+                    f"Analyze this:\n\n{extracted_text}"
                 }
-
             ],
 
-            max_tokens=2000,
+            max_tokens=2500,
 
-            temperature=0.8
+            temperature=0.5
         )
 
-        ai_reply = response.choices[0].message.content
-
-        ai_reply = (
-
-            ai_reply
-            .replace("*", "")
-            .replace('"', "")
-            .replace("'", "")
-            .replace("```", "")
+        reply = (
+            response
+            .choices[0]
+            .message
+            .content
         )
 
-        ai_reply = re.sub(r'\n+', '\n', ai_reply)
+        reply = clean_reply(reply)
 
         return jsonify({
 
-            "reply":ai_reply
+            "reply":
+            reply + "\n\n✨ Analyzed by DIVU AI"
         })
 
     except Exception as e:
 
-        print("CHAT ERROR:", e)
+        return jsonify({
+
+            "reply":
+            f"❌ File Error: {str(e)}"
+        })
+
+# =========================================================
+# REAL AI IMAGE EDITING
+# REPLICATE VERSION
+# =========================================================
+
+@app.route("/edit-image", methods=["POST"])
+def edit_image():
+
+    try:
+
+        # CHECK IMAGE
+
+        if "image" not in request.files:
+
+            return jsonify({
+                "reply":
+                "No image uploaded"
+            })
+
+        image = request.files["image"]
+
+        prompt = request.form.get(
+            "prompt",
+            ""
+        ).strip()
+
+        if not prompt:
+
+            return jsonify({
+                "reply":
+                "Please enter prompt"
+            })
+
+        # SAVE IMAGE
+
+        filename = secure_filename(
+            image.filename
+        )
+
+        filename = (
+            f"{int(time.time())}_{filename}"
+        )
+
+        original_path = os.path.join(
+            UPLOAD_FOLDER,
+            filename
+        )
+
+        image.save(original_path)
+
+        # REPLICATE TOKEN
+
+        os.environ[
+            "REPLICATE_API_TOKEN"
+        ] = REPLICATE_API_TOKEN
+
+        # ADVANCED PROMPT
+
+        enhanced_prompt = f"""
+
+        Preserve the SAME person.
+        Preserve SAME face.
+        Preserve hairstyle.
+        Preserve body.
+        Preserve pose.
+        Preserve composition.
+
+        USER REQUEST:
+        {prompt}
+
+        Ultra realistic.
+        Cinematic lighting.
+        Movie quality.
+        Highly detailed.
+        """
+
+        # RUN MODEL
+
+        output = replicate.run(
+
+            "black-forest-labs/flux-kontext-pro",
+
+            input={
+
+                "input_image": open(
+                    original_path,
+                    "rb"
+                ),
+
+                "prompt":
+                enhanced_prompt
+            }
+        )
+
+        # HANDLE OUTPUT
+
+        if isinstance(output, list):
+
+            output_url = output[0]
+
+        else:
+
+            output_url = output
+
+        # DOWNLOAD IMAGE
+
+        output_filename = (
+            f"edited_{int(time.time())}.png"
+        )
+
+        output_path = os.path.join(
+            OUTPUT_FOLDER,
+            output_filename
+        )
+
+        img_data = requests.get(
+            output_url
+        ).content
+
+        with open(output_path, "wb") as f:
+
+            f.write(img_data)
+
+        # SUCCESS
 
         return jsonify({
 
-            "reply":"Server Error"
+            "reply":
+            "✨ DIVU AI edited your image successfully.",
+
+            "image":
+            f"http://127.0.0.1:5000/static/op/{output_filename}"
         })
 
-# =========================================
+    except Exception as e:
+
+        return jsonify({
+
+            "reply":
+            f"❌ Error: {str(e)}"
+        })
+
+# =========================================================
 # RUN
-# =========================================
+# =========================================================
 
 if __name__ == "__main__":
 
